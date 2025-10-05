@@ -1,0 +1,137 @@
+// lib/api.ts
+
+// ---------- Types ----------
+export type Instrument = {
+  id: string
+  name: string
+  vendor: string
+  models_arr: string[]
+  visibility: "public" | "private"
+  description: string
+  updated_at: string
+}
+
+export type Source = {
+  id: string
+  instrument: string
+  type: string         // "pdf" | "image" | "video" | "url" | etc.
+  status: string       // "uploaded" | "parsed" | "embedded" | "approved"
+  title: string
+  storage_uri?: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type FaqItem = { q: string; a: string; tags?: string[] }
+export type FaqResponse = { items: FaqItem[] }
+
+// ---------- Config ----------
+export const API =
+  (process.env.NEXT_PUBLIC_API?.replace(/\/$/, "")) || "http://localhost:8000/api"
+
+// ---------- Internal fetch wrapper ----------
+async function j<T>(res: Response): Promise<T> {
+  if (!res.ok) {
+    const text = await res.text().catch(() => "")
+    throw new Error(`API ${res.status} ${res.statusText} ${text}`)
+  }
+  return res.json() as Promise<T>
+}
+
+// ---------- Chat ----------
+export async function askChat(
+  instrument: string,
+  question: string
+): Promise<{ answer: string; citations: any[]; turn_id?: string }> {
+  // Backend route is /api/chat/ask (no trailing slash) and expects instrument_id
+  const res = await fetch(`${API}/chat/ask`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ instrument_id: instrument, question }),
+  })
+  return j(res)
+}
+
+// Server-Sent Events stream for incremental tokens
+export function streamChat(instrument: string, q: string): EventSource {
+  // Note: /stream/chat is outside /api/ to avoid DRF content negotiation
+  const baseUrl = API.replace('/api', '');
+  const url = `${baseUrl}/stream/chat?instrument_id=${encodeURIComponent(instrument)}&q=${encodeURIComponent(q)}`;
+  return new EventSource(url);
+}
+
+
+// ---------- Instruments ----------
+export async function listInstruments(): Promise<Instrument[]> {
+  const res = await fetch(`${API}/instruments/`, { cache: "no-store" })
+  return j<Instrument[]>(res)
+}
+
+// ---------- Sources ----------
+export async function listSources(opts: {
+  instrument: string
+  q?: string
+  type?: string
+  status?: string
+  page?: number
+  page_size?: number
+}): Promise<Source[]> {
+  const p = new URLSearchParams()
+  p.set("instrument", opts.instrument)
+  if (opts.q) p.set("q", opts.q)
+  if (opts.type) p.set("type", opts.type)
+  if (opts.status) p.set("status", opts.status)
+  if (opts.page) p.set("page", String(opts.page))
+  if (opts.page_size) p.set("page_size", String(opts.page_size))
+
+  const url = `${API}/sources/?${p.toString()}`
+  const res = await fetch(url, { cache: "no-store" })
+  if (res.status === 404) {
+    const alt = `${API}/instruments/${encodeURIComponent(opts.instrument)}/sources/`
+    const res2 = await fetch(alt, { cache: "no-store" })
+    return j<Source[]>(res2)
+  }
+  return j<Source[]>(res)
+}
+
+// ---------- FAQ ----------
+const DEFAULT_FAQ: FaqResponse = {
+  items: [
+    { q: "How do I upload a PDF?", a: "Go to Knowledge Store → Upload. After it parses, you’ll see a preview and can approve it for use." },
+    { q: "How do I add a data source?", a: "Use Connectors in Knowledge Store. Choose Drive/SharePoint/S3, authorize, then select folders." },
+    { q: "How do citations work?", a: "Each LLM answer includes citations; click to open the exact page/region in the Source Viewer." }
+  ]
+}
+
+export async function getFaq(): Promise<FaqResponse> {
+  try {
+    // Your backend exposes /api/support/faq
+    const res = await fetch(`${API}/support/faq`, { cache: "no-store" })
+    if (res.ok) return j<FaqResponse>(res)
+  } catch {}
+  return DEFAULT_FAQ
+}
+
+// ---------- Feedback ----------
+export async function submitFeedback(payload: {
+  email?: string
+  category: string   // "support" | "bug" | "idea" | etc.
+  body: string
+  route?: string
+  meta?: Record<string, unknown>
+}): Promise<{ id?: string; ok?: boolean }> {
+  const tryPost = async (path: string) => {
+    const res = await fetch(`${API}${path}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    })
+    return res
+  }
+
+  let res = await tryPost(`/feedback/`)
+  if (res.status === 404 || res.status === 405) {
+    res = await tryPost(`/support/feedback`)
+  }
+  return j(res)
+}

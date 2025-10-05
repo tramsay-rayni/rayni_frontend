@@ -1,0 +1,6 @@
+@tailwind base; @tailwind components; @tailwind utilities;
+.card{@apply bg-white border rounded-xl shadow-sm;} .btn{@apply inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium transition;}
+.btn-primary{@apply btn bg-black text-white hover:bg-gray-800;} .input{@apply border rounded-lg px-3 py-2 text-sm w-full;}
+.badge{@apply inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs;} .badge-green{@apply badge border-green-600 text-green-700;}
+.badge-amber{@apply badge border-amber-600 text-amber-700;} .badge-gray{@apply badge border-gray-400 text-gray-600;}
+.link{@apply underline underline-offset-4 hover:text-black;}
