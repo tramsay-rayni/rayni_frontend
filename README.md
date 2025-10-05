@@ -10,8 +10,9 @@ Welcome! This document explains how to run, develop, and extend the **Rayni** fr
 
 ### Prerequisites
 - Node.js **≥ 18** (LTS recommended)
-- PNPM, Yarn, or NPM (examples use **npm**)  
+- PNPM, Yarn, or NPM (examples use **npm**)
 - A running Rayni backend (Django) on `http://localhost:8000` or a deployed URL
+  - 📚 Backend API docs available at: **http://localhost:8000/api/docs/**
 
 ### Install & run
 ```bash
@@ -88,6 +89,8 @@ frontend/
 ---
 
 ## 4) API wrapper (`lib/api.ts`)
+
+> **📚 For complete API documentation, see http://localhost:8000/api/docs/**
 
 ### Config
 ```ts
