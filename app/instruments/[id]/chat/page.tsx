@@ -108,9 +108,24 @@ export default function ChatPage(){
     <div className="space-y-4">
       <div className="card p-3 space-y-2">
         <div className="flex gap-2">
-          <input className="input" value={q} onChange={e=>setQ(e.target.value)} placeholder="Ask a question grounded to this instrument..." />
-          <button onClick={onStream} className="btn btn-primary" disabled={streaming}>Stream</button>
-          <button onClick={onAsk} className="btn border" disabled={streaming}>Ask</button>
+          <div className="relative flex-1">
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
+            <input className="input pl-10" value={q} onChange={e=>setQ(e.target.value)} placeholder="Ask a question grounded to this instrument..." />
+          </div>
+          <button onClick={onStream} className="btn btn-primary" disabled={streaming}>
+            <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            Stream
+          </button>
+          <button onClick={onAsk} className="btn-secondary" disabled={streaming}>
+            <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+            </svg>
+            Ask
+          </button>
         </div>
         <label className="text-xs flex items-center gap-2">
           <input type="checkbox" checked={attachIngest} onChange={e=>setAttachIngest(e.target.checked)} />

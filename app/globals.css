@@ -1,6 +1,12 @@
 @tailwind base; @tailwind components; @tailwind utilities;
-.card{@apply bg-white border rounded-xl shadow-sm;} .btn{@apply inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium transition;}
-.btn-primary{@apply btn bg-black text-white hover:bg-gray-800;} .input{@apply border rounded-lg px-3 py-2 text-sm w-full;}
-.badge{@apply inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs;} .badge-green{@apply badge border-green-600 text-green-700;}
-.badge-amber{@apply badge border-amber-600 text-amber-700;} .badge-gray{@apply badge border-gray-400 text-gray-600;}
-.link{@apply underline underline-offset-4 hover:text-black;}
+.card{@apply bg-white border rounded-xl shadow-sm;}
+.btn{@apply inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium transition;}
+.btn-primary{@apply btn bg-gray-900 text-white hover:bg-gray-800;}
+.btn-secondary{@apply btn bg-white border border-gray-300 text-gray-700 hover:bg-gray-50;}
+.input{@apply border rounded-lg px-3 py-2 text-sm w-full;}
+.badge{@apply inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs;}
+.badge-green{@apply badge border-green-600 bg-green-50 text-green-700;}
+.badge-amber{@apply badge border-amber-600 bg-amber-50 text-amber-700;}
+.badge-gray{@apply badge border-gray-400 bg-gray-50 text-gray-600;}
+.link{@apply underline underline-offset-4 hover:text-gray-900;}
+.nav-item{@apply flex items-center gap-2 px-2 py-2 rounded hover:bg-gray-100 transition-colors;}
