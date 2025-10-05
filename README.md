@@ -24,8 +24,26 @@ printf "NEXT_PUBLIC_API=http://localhost:8000/api\n" > .env.local
 
 # start dev server
 npm run dev
-# open http://localhost:3000
+# open http://localhost:3001
 ```
+
+### Login & Authentication
+
+The app uses session-based authentication. On first visit, you'll be redirected to `/login`.
+
+**Demo Accounts:**
+
+1. **Admin User** - `admin@rayni.com`
+   - Full access to all instruments
+   - Can manage access requests
+   - Can approve/deny user requests
+
+2. **Regular User** - `user@rayni.com`
+   - Limited access
+   - Must request access to instruments
+   - Can only use approved instruments
+
+See the backend's `TESTING-AUTH.md` for complete testing scenarios.
 
 ### Build & production run
 ```bash

@@ -1,17 +1,28 @@
 "use client";
 import React from "react";
 import Link from "next/link";
-import { listInstruments, type Instrument } from "@/lib/api";
+import { listInstruments, getAuthMe, type Instrument } from "@/lib/api";
 
 export default function Page(){
   const [instruments, setInstruments] = React.useState<Instrument[]>([]);
+  const [allowedIds, setAllowedIds] = React.useState<string[]>([]);
   const [search, setSearch] = React.useState("");
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
-    listInstruments().then(data => {
-      setInstruments(data);
+    Promise.all([
+      listInstruments(),
+      getAuthMe()
+    ]).then(([instrumentsData, authData]) => {
+      setInstruments(instrumentsData);
+      setAllowedIds(authData.allowed);
       setLoading(false);
+    }).catch(() => {
+      // If auth fails, still show instruments but assume no access
+      listInstruments().then(data => {
+        setInstruments(data);
+        setLoading(false);
+      });
     });
   }, []);
 
@@ -51,7 +62,9 @@ export default function Page(){
       </div>
     ) : (
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {filtered.map(i => (
+        {filtered.map(i => {
+          const hasAccess = allowedIds.includes(i.id);
+          return (
           <div key={i.id} className="card p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -64,17 +77,46 @@ export default function Page(){
                   </div>
                 )}
               </div>
-              <span className={i.visibility==="restricted"?"badge badge-gray":"badge badge-green"}>
-                {i.visibility==="restricted"?"Restricted":"Accessible"}
-              </span>
+              <div className="flex flex-col gap-1 items-end">
+                <span className={i.visibility==="restricted"?"badge badge-gray":"badge badge-green"}>
+                  {i.visibility==="restricted"?"Restricted":"Accessible"}
+                </span>
+                {hasAccess ? (
+                  <span className="badge badge-green text-xs">✓ Access Granted</span>
+                ) : (
+                  <span className="badge badge-amber text-xs">⚠️ No Access</span>
+                )}
+              </div>
             </div>
+
+            {!hasAccess && (
+              <div className="mt-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
+                Request access to use this instrument
+              </div>
+            )}
+
             <div className="mt-3 flex gap-2">
-              <Link className="btn btn-primary" href={`/instruments/${i.id}/chat`}>Open Chat</Link>
-              <Link className="btn border" href={`/instruments/${i.id}/store`}>Knowledge</Link>
-              <Link className="btn border" href={`/instruments/${i.id}/access`}>Access</Link>
+              {hasAccess ? (
+                <>
+                  <Link className="btn btn-primary" href={`/instruments/${i.id}/chat`}>Open Chat</Link>
+                  <Link className="btn border" href={`/instruments/${i.id}/store`}>Knowledge</Link>
+                </>
+              ) : (
+                <>
+                  <button className="btn btn-primary opacity-50 cursor-not-allowed" disabled>
+                    Open Chat
+                  </button>
+                  <button className="btn border opacity-50 cursor-not-allowed" disabled>
+                    Knowledge
+                  </button>
+                </>
+              )}
+              <Link className="btn border" href={`/instruments/${i.id}/access`}>
+                {hasAccess ? "Access" : "Request Access"}
+              </Link>
             </div>
           </div>
-        ))}
+        )})}
       </div>
     )}
   </div>);

@@ -1,14 +1,52 @@
 "use client";
 import React from "react";
-import { listSources } from "@/lib/api";
-import { useParams } from "next/navigation";
+import { listSources, getAuthMe } from "@/lib/api";
+import { useParams, useRouter } from "next/navigation";
 
 export default function Store(){
   const { id } = useParams<{id:string}>();
+  const router = useRouter();
+  const [hasAccess, setHasAccess] = React.useState<boolean | null>(null);
   const [q,setQ]=React.useState(""); const [typ,setTyp]=React.useState(""); const [status,setStatus]=React.useState(""); const [sources,setSources]=React.useState<any[]>([]);
 
+  React.useEffect(() => {
+    getAuthMe().then(auth => {
+      const allowed = auth.allowed.includes(id as string);
+      setHasAccess(allowed);
+      if (!allowed) {
+        setTimeout(() => router.push(`/instruments/${id}/access`), 2000);
+      }
+    }).catch(() => {
+      setHasAccess(false);
+      setTimeout(() => router.push(`/instruments/${id}/access`), 2000);
+    });
+  }, [id, router]);
+
   async function load(){ const data=await listSources({ instrument: id as string, q, type: typ||undefined, status: status||undefined }); setSources(data); }
-  React.useEffect(()=>{ load(); }, [id,q,typ,status]);
+  React.useEffect(()=>{ if (hasAccess) load(); }, [id,q,typ,status,hasAccess]);
+
+  if (hasAccess === null) {
+    return (
+      <div className="card p-8 text-center text-gray-500">
+        Checking access permissions...
+      </div>
+    );
+  }
+
+  if (hasAccess === false) {
+    return (
+      <div className="card p-8 text-center">
+        <div className="text-4xl mb-4">🔒</div>
+        <h3 className="text-xl font-semibold mb-2">Access Required</h3>
+        <p className="text-gray-600 mb-4">
+          You don't have access to this instrument's knowledge store.
+        </p>
+        <p className="text-sm text-gray-500">
+          Redirecting to access request page...
+        </p>
+      </div>
+    );
+  }
 
   return (<div className="space-y-4">
     <div className="flex items-center justify-between">

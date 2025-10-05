@@ -25,6 +25,16 @@ export type Source = {
 export type FaqItem = { q: string; a: string; tags?: string[] }
 export type FaqResponse = { items: FaqItem[] }
 
+export type AuthMe = {
+  userId: string
+  email: string
+  name: string
+  allowed: string[]  // instrument IDs user has access to
+  is_admin: boolean
+  role?: string
+  isGuest?: boolean
+}
+
 // ---------- Config ----------
 export const API =
   (process.env.NEXT_PUBLIC_API?.replace(/\/$/, "")) || "http://localhost:8000/api"
@@ -61,10 +71,46 @@ export function streamChat(instrument: string, q: string): EventSource {
 }
 
 
+// ---------- Auth ----------
+export async function login(email: string): Promise<AuthMe> {
+  const res = await fetch(`${API}/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+    credentials: "include",  // Important: include cookies for session
+  })
+  return j<AuthMe>(res)
+}
+
+export async function logout(): Promise<void> {
+  await fetch(`${API}/auth/logout`, {
+    method: "POST",
+    credentials: "include",
+  })
+}
+
+export async function getAuthMe(): Promise<AuthMe> {
+  const res = await fetch(`${API}/auth/me`, {
+    cache: "no-store",
+    credentials: "include",  // Important: include cookies for session
+  })
+  return j<AuthMe>(res)
+}
+
 // ---------- Instruments ----------
 export async function listInstruments(): Promise<Instrument[]> {
   const res = await fetch(`${API}/instruments/`, { cache: "no-store" })
   return j<Instrument[]>(res)
+}
+
+// ---------- Access Control ----------
+export async function requestAccess(instrumentId: string, reason: string): Promise<{ id: string; status: string }> {
+  const res = await fetch(`${API}/instruments/${instrumentId}/request-access`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ reason }),
+  })
+  return j(res)
 }
 
 // ---------- Sources ----------

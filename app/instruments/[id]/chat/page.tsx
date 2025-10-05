@@ -1,18 +1,34 @@
 "use client";
 import React from "react";
-import { useParams } from "next/navigation";
-import { askChat, streamChat } from "@/lib/api";
+import { useParams, useRouter } from "next/navigation";
+import { askChat, streamChat, getAuthMe } from "@/lib/api";
 
 type Cite={ source_id:string; fragment_id:string; score:number };
 
 export default function ChatPage(){
   const { id } = useParams<{id:string}>();
+  const router = useRouter();
+  const [hasAccess, setHasAccess] = React.useState<boolean | null>(null);
   const [q,setQ]=React.useState("");
   const [streaming,setStreaming]=React.useState(false);
   const [lastTurn,setLastTurn]=React.useState<string|undefined>();
   const [messages,setMessages]=React.useState<{role:"user"|"assistant"; text:string; citations?:Cite[]}[]>([]);
   const [proofs,setProofs]=React.useState<Cite[]|null>(null);
   const [attachIngest,setAttachIngest]=React.useState(false);
+
+  React.useEffect(() => {
+    getAuthMe().then(auth => {
+      const allowed = auth.allowed.includes(id as string);
+      setHasAccess(allowed);
+      if (!allowed) {
+        // Redirect to access page after a short delay
+        setTimeout(() => router.push(`/instruments/${id}/access`), 2000);
+      }
+    }).catch(() => {
+      setHasAccess(false);
+      setTimeout(() => router.push(`/instruments/${id}/access`), 2000);
+    });
+  }, [id, router]);
 
  function onStream(){
   if(!q.trim()) return;
@@ -63,6 +79,29 @@ export default function ChatPage(){
     setMessages(m=>[...m,{role:"assistant",text:res.answer,citations:res.citations}]);
     setProofs(res.citations);
     setLastTurn(res.turn_id);
+  }
+
+  if (hasAccess === null) {
+    return (
+      <div className="card p-8 text-center text-gray-500">
+        Checking access permissions...
+      </div>
+    );
+  }
+
+  if (hasAccess === false) {
+    return (
+      <div className="card p-8 text-center">
+        <div className="text-4xl mb-4">🔒</div>
+        <h3 className="text-xl font-semibold mb-2">Access Required</h3>
+        <p className="text-gray-600 mb-4">
+          You don't have access to this instrument's chat feature.
+        </p>
+        <p className="text-sm text-gray-500">
+          Redirecting to access request page...
+        </p>
+      </div>
+    );
   }
 
   return (<div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-4">
