@@ -83,6 +83,27 @@ export function streamChat(instrument: string, q: string): EventSource {
   return new EventSource(url);
 }
 
+// Chat with file attachments
+export async function chatWithAttachments(
+  instrument: string,
+  question: string,
+  files: File[]
+): Promise<{ answer: string; citations: any[]; turn_id?: string }> {
+  const formData = new FormData();
+  formData.append("instrument_id", instrument);
+  formData.append("question", question);
+
+  files.forEach((file) => {
+    formData.append("files", file);
+  });
+
+  const res = await fetch(`${API}/chat/attach`, {
+    method: "POST",
+    body: formData,
+  });
+  return j(res);
+}
+
 
 // ---------- Auth ----------
 export async function login(email: string): Promise<AuthMe> {
@@ -114,6 +135,11 @@ export async function getAuthMe(): Promise<AuthMe> {
 export async function listInstruments(): Promise<Instrument[]> {
   const res = await fetch(`${API}/instruments/`, { cache: "no-store" })
   return j<Instrument[]>(res)
+}
+
+export async function getInstrument(id: string): Promise<Instrument> {
+  const res = await fetch(`${API}/instruments/${id}/`, { cache: "no-store" })
+  return j<Instrument>(res)
 }
 
 // ---------- Access Control ----------
