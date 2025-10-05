@@ -120,9 +120,35 @@ export function streamChat(instrument: string, q: string): EventSource {
 }
 ```
 
+### Knowledge Store & Folders
+```ts
+// List sources with filtering
+export async function listSources(opts: {
+  instrument: string;
+  q?: string;           // Search query
+  type?: string;        // pdf, video, image, note, url
+  status?: string;      // uploaded, parsed, embedded, approved, archived
+}): Promise<Source[]>
+
+// List folders for an instrument
+export async function listFolders(instrumentId: string): Promise<Folder[]>
+
+// Create a new folder
+export async function createFolder(data: {
+  instrument: string;
+  name: string;
+  parent?: string | null;  // For nested folders
+}): Promise<Folder>
+
+// Delete a folder (documents are preserved)
+export async function deleteFolder(folderId: string): Promise<void>
+
+// Archive a document (admin-only)
+export async function archiveSource(sourceId: string): Promise<Source>
+```
+
 ### Other helpers
 - `listInstruments()` – list visible instruments
-- `listSources({ instrument, q?, type?, status? })` – search/filter sources
 - `getFaq()` – fetch FAQ (falls back to defaults if backend route missing)
 - `submitFeedback({...})` – submit support/bug/idea feedback
 
@@ -146,7 +172,70 @@ export function streamChat(instrument: string, q: string): EventSource {
 
 ---
 
-## 6) CORS & streaming notes
+## 6) Knowledge Store (`/instruments/[id]/store`)
+
+The Knowledge Store provides document management with categorization, tagging, and folder organization.
+
+### Features
+
+**Document Table**
+- **Category badges** - Color-coded labels: Manual (blue), Protocol (green), SOP (purple), Troubleshooting (amber), Training (pink), Maintenance (gray)
+- **Folder paths** - Shows document organization
+- **Model tags** - Equipment variant chips (e.g., "FACSAria III", "LSM 980")
+- **Version tracking** - Document revision numbers
+- **Upload dates** - When documents were added
+- **Archive action** - Admin-only soft delete
+
+**Filters** (5 total)
+- **Search** - Title, version, tags
+- **Category** - Manual, Protocol, SOP, Troubleshooting, Training, Maintenance
+- **Folder** - Dynamically populated from instrument folders
+- **Type** - PDF, video, image, note, URL
+- **Status** - Uploaded, parsed, embedded, approved, rejected, archived
+
+**Folder Management** (Admin-only)
+- Click "Manage Folders" button to open modal
+- Create nested folder hierarchies (e.g., "Safety Documentation" inside "Manuals")
+- Delete folders (documents are preserved)
+- View all folders with parent relationships
+
+### Upload Wizard (`/instruments/[id]/store/upload`)
+
+**4-step upload flow with auto-detection:**
+
+**Step 1: File Selection**
+- Drag-and-drop or file picker
+- Supports PDF, video, image formats
+
+**Step 2: Categorization** (auto-suggested!)
+- Filename detection:
+  - Contains "manual" → suggests Manual
+  - Contains "SOP" → suggests SOP
+  - Contains ".mp4" → suggests Training
+  - Contains "troubleshoot" → suggests Troubleshooting
+- 6 category cards to choose from
+- Override auto-detection if needed
+
+**Step 3: Metadata**
+- **Folder** - Auto-selects based on category (e.g., SOP → SOPs folder)
+- **Model tags** - Checkboxes for equipment variants, auto-checked if found in filename
+- **Version** - Optional (e.g., "v8.2", "Rev 2024")
+- **Description** - Optional, helps AI retrieval
+
+**Step 4: Preview & Submit**
+- Review all metadata
+- Shows file size and summary
+- Upload button sends to backend
+
+**Example:** Upload `BD_FACSAria_Manual_v8.2.pdf`:
+1. Auto-detects category: **Manual** ✅
+2. Auto-selects folder: **Manuals** ✅
+3. Auto-checks model tag: **FACSAria III** (if instrument has it) ✅
+4. User adds description, clicks Upload
+
+---
+
+## 7) CORS & streaming notes
 
 - The backend sends: `Content-Type: text/event-stream`, `Cache-Control: no-cache`, `X-Accel-Buffering: no`, and `Access-Control-Allow-Origin: *` (dev).
 - EventSource automatically sets the `Accept: text/event-stream` header; **don’t** add custom headers unless you also handle them server‑side.

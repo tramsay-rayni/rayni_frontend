@@ -11,15 +11,28 @@ export type Instrument = {
   updated_at: string
 }
 
+export type Folder = {
+  id: string
+  instrument: string
+  name: string
+  parent?: string | null
+}
+
 export type Source = {
   id: string
   instrument: string
+  folder?: string | null
   type: string         // "pdf" | "image" | "video" | "url" | etc.
-  status: string       // "uploaded" | "parsed" | "embedded" | "approved"
+  category?: string | null  // "manual" | "protocol" | "sop" | "troubleshooting" | "training" | "maintenance"
+  description?: string | null
+  version?: string | null
+  model_tags: string[]
+  status: string       // "uploaded" | "parsed" | "embedded" | "approved" | "archived"
   title: string
   storage_uri?: string | null
+  archived: boolean
+  archived_at?: string | null
   created_at: string
-  updated_at: string
 }
 
 export type FaqItem = { q: string; a: string; tags?: string[] }
@@ -138,6 +151,36 @@ export async function listSources(opts: {
     return j<Source[]>(res2)
   }
   return j<Source[]>(res)
+}
+
+// ---------- Folders ----------
+export async function listFolders(instrumentId: string): Promise<Folder[]> {
+  const res = await fetch(`${API}/folders/?instrument=${instrumentId}`, { cache: "no-store" })
+  return j<Folder[]>(res)
+}
+
+export async function createFolder(data: { instrument: string; name: string; parent?: string | null }): Promise<Folder> {
+  const res = await fetch(`${API}/folders/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  })
+  return j<Folder>(res)
+}
+
+export async function deleteFolder(folderId: string): Promise<void> {
+  await fetch(`${API}/folders/${folderId}/`, {
+    method: "DELETE"
+  })
+}
+
+// ---------- Archive ----------
+export async function archiveSource(sourceId: string): Promise<Source> {
+  const res = await fetch(`${API}/sources/${sourceId}/archive`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+  })
+  return j<Source>(res)
 }
 
 // ---------- FAQ ----------
